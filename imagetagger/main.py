@@ -12,6 +12,18 @@ default_keymap = {
     '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
     '5': '5', '6': '6', '7': '7', '8': '8', '9': '9' }
 
+def read_data_json(path):
+    if path is None or not Path(path).is_file():
+        return {}, default_keymap
+
+    data = json.load(Path(path).open('r'))
+
+    metadata = data.get('files', {})
+    keymap = data.get('keymaps', default_keymap)
+
+    return metadata, keymap
+
+
 class MainWindow(QWidget):
     def __init__(self, args):
         super().__init__()
@@ -20,9 +32,8 @@ class MainWindow(QWidget):
         for suffix in args.suffixes:
             self.images.extend(self.path.glob('**/*.{}'.format(suffix)))
 
-        self.metadata = {}
+        self.metadata, self.keymap = read_data_json(args.datafile)
         self.datafile = Path(args.datafile)
-        self.keymap = default_keymap
 
         tempkeymap = {}
 
@@ -122,7 +133,7 @@ class MainWindow(QWidget):
 
     def closeEvent(self, event):
         print('save to: '+str(self.datafile))
-        output_data = {'key_bind':self.keymap, 'tags': self.metadata}
+        output_data = {'keymaps':self.keymap, 'files': self.metadata}
         with self.datafile.open('w') as f:
             f.write(json.dumps(output_data))
 
