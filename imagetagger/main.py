@@ -12,6 +12,10 @@ default_keymap = {
     '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
     '5': '5', '6': '6', '7': '7', '8': '8', '9': '9' }
 
+description_text = """Space/Enter key ... move forward
+Backspace key ... move backward
+Escape key ... save and exit"""
+
 def read_data_json(path):
     if path is None or not Path(path).is_file():
         return {}, default_keymap
@@ -29,8 +33,12 @@ class MainWindow(QWidget):
         super().__init__()
         self.path = Path(args.directory)
         self.images = []
+
         for suffix in args.suffixes:
             self.images.extend(self.path.glob('**/*.{}'.format(suffix)))
+
+        if not self.images:
+            raise RuntimeError('images not found in {}'.format(self.path))
 
         self.metadata, self.keymap = read_data_json(args.datafile)
         self.datafile = Path(args.datafile)
@@ -61,13 +69,14 @@ class MainWindow(QWidget):
         self.resize(720,480)
         self.setWindowTitle("image tagger")
 
-        master_layout = QHBoxLayout(self)
+        master_layout = QVBoxLayout(self)
+        layout = QHBoxLayout(self)
 
         self.pictureLabel = QLabel('label')
         self.pictureLabel.setScaledContents(False)
         self.pictureLabel.setMinimumSize(1,1)
         self.pictureLabel.setAlignment(QtCore.Qt.AlignCenter)
-        master_layout.addWidget(self.pictureLabel)
+        layout.addWidget(self.pictureLabel)
 
         self.tagList = QListWidget(self)
         self.tagList.setMinimumSize(160,1)
@@ -76,7 +85,11 @@ class MainWindow(QWidget):
         for key, val in sorted(list(self.keymap.items())):
             self.tagList.addItem(val)
 
-        master_layout.addWidget(self.tagList)
+        layout.addWidget(self.tagList)
+        master_layout.addLayout(layout)
+
+        description = QLabel(description_text)
+        master_layout.addWidget(description)
 
         self.setLayout(master_layout)
 
